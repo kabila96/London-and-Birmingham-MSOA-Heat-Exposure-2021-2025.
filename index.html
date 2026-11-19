@@ -71,6 +71,20 @@ footer{color:var(--muted);font-size:11px;padding:4px 8px 8px;text-align:center}
 .author .ch{color:#FDB97C;font-weight:600}
 .mapauthor{background:rgba(36,36,36,.9);color:var(--text);padding:5px 9px;border:1px solid rgba(253,141,60,.5);border-radius:3px;font-size:11px;line-height:1.35}
 .mapauthor span{color:#FDB97C}
+.shap .tabs{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 10px}
+.shap .tab{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:6px 12px;border-radius:3px;cursor:pointer;font-size:12.5px;font-family:inherit}
+.shap .tab:hover{border-color:#5a5a5a}
+.shap .tab.on{border-color:var(--accent);background:#3a2a1f}
+.shap .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 12px}
+.shap figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:3px;overflow:hidden;cursor:zoom-in;display:flex;flex-direction:column}
+.shap figure img{display:block;width:100%;height:auto;aspect-ratio:762/580;object-fit:contain;background:#fff}
+.shap figcaption{background:var(--panel2);color:var(--muted);font-size:11.5px;padding:6px 10px;display:flex;align-items:center;gap:7px}
+.shap figcaption i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.shap .note{padding-top:10px}
+.lightbox{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+.lightbox.open{display:flex}
+.lightbox img{max-width:min(1100px,100%);max-height:100%;background:#fff;border-radius:3px}
+@media (max-width:1000px){.shap .pair{grid-template-columns:1fr}}
 @media (max-width:1000px){.ind{grid-template-columns:repeat(2,1fr)}.main,.bottom,.drivers{grid-template-columns:1fr}.right{grid-template-rows:260px 300px}}
 </style>
 </head>
@@ -141,6 +155,18 @@ footer{color:var(--muted);font-size:11px;padding:4px 8px 8px;text-align:center}
   </table></div>
   <div class="note">Heatwave: ≥ 28 °C (London) or ≥ 27 °C (Birmingham) for three consecutive days. *Birmingham 2024 not independently confirmed as a heatwave; aligned with London's late-July UKHSA heat episode.</div></div>
 </section>
+
+<section class="panel shap" id="shap">
+  <div class="ptitle">SHAP analysis: how each driver pushes predicted heatwave LST</div>
+  <div class="psub">Random Forest models, Greater London and Birmingham–West Midlands · thesis section 3.7 and Figure 5 · click a plot to enlarge</div>
+  <div class="tabs" id="shapTabs" role="tablist"></div>
+  <div class="pair">
+    <figure data-city="london"><img id="shapLon" alt="" loading="lazy"><figcaption><i style="background:var(--lon)"></i>Greater London</figcaption></figure>
+    <figure data-city="birmingham"><img id="shapBir" alt="" loading="lazy"><figcaption><i style="background:var(--bir)"></i>Birmingham–West Midlands</figcaption></figure>
+  </div>
+  <div class="note" id="shapNote"></div>
+</section>
+<div class="lightbox" id="lightbox" role="dialog" aria-label="Enlarged SHAP plot"><img alt=""></div>
 
 <section class="bottom">
   <div class="panel"><div class="ptitle">Extreme-heat MSOAs (P90), hottest first</div><div class="psub" id="listSub">Click an MSOA to zoom to it on the map</div><div class="list" id="list"></div></div>
@@ -322,6 +348,34 @@ function buildTable(){
 document.getElementById('cityBtns').innerHTML = CITIES.map(c=>`<button class="btn" data-city="${c.key}"><span class="dot" style="background:${c.color}"></span>${c.short}</button>`).join('');
 document.querySelectorAll('.btn').forEach(b => b.onclick = () => { city = b.dataset.city; update(); });
 restyle(); buildTable(); update();
+</script>
+<script>
+// ---- SHAP gallery ----
+(function(){
+  const SHAP = [
+    {k:'overall', t:'Overall influence', n:'Beeswarm summary. Each dot is a sample; colour shows the feature value (red high, blue low). Dots right of zero raise predicted LST, dots left of zero lower it. Year indicators rank highest in both cities, then NDBI and built-up probability.'},
+    {k:'ndbi', t:'NDBI (built-up index)', n:'Predicted LST rises steadily as NDBI increases in both cities: more built-up surfaces, hotter surfaces.'},
+    {k:'built', t:'Built-up probability', n:'Higher Dynamic World built-up probability raises predicted LST. It is the leading environmental predictor in Birmingham–West Midlands.'},
+    {k:'ndvi', t:'NDVI (vegetation)', n:'Higher NDVI lowers predicted LST: greener MSOAs are cooler during heatwaves.'},
+    {k:'dem', t:'Elevation (DEM)', n:'Higher elevation is associated with lower predicted LST.'},
+    {k:'albedo', t:'Albedo', n:'Albedo has a weaker influence than the built-up and vegetation indicators.'},
+    {k:'mndwi', t:'MNDWI (water)', n:'MNDWI has the smallest overall effect in both cities, though in Greater London a few very high water-index samples are linked to strongly lower predicted LST.'}
+  ];
+  const tabs=document.getElementById('shapTabs'), lon=document.getElementById('shapLon'), bir=document.getElementById('shapBir'), note=document.getElementById('shapNote');
+  function show(i){
+    const s=SHAP[i];
+    lon.src='shap/london_'+s.k+'.png'; lon.alt='Greater London SHAP plot: '+s.t;
+    bir.src='shap/birmingham_'+s.k+'.png'; bir.alt='Birmingham–West Midlands SHAP plot: '+s.t;
+    note.innerHTML='<b style="color:var(--text)">'+s.t+':</b> '+s.n+' SHAP shows association, not cause.';
+    [...tabs.children].forEach((b,j)=>{b.classList.toggle('on',j===i);b.setAttribute('aria-selected',j===i);});
+  }
+  SHAP.forEach((s,i)=>{const b=document.createElement('button');b.className='tab';b.type='button';b.setAttribute('role','tab');b.textContent=s.t;b.onclick=()=>show(i);tabs.appendChild(b);});
+  show(0);
+  const lb=document.getElementById('lightbox'), lbImg=lb.querySelector('img');
+  document.querySelectorAll('.shap figure').forEach(f=>f.addEventListener('click',()=>{const im=f.querySelector('img');lbImg.src=im.src;lbImg.alt=im.alt;lb.classList.add('open');}));
+  lb.addEventListener('click',()=>lb.classList.remove('open'));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('open');});
+})();
 </script>
 </body>
 </html>
