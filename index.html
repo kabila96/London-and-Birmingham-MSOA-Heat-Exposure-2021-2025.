@@ -64,6 +64,13 @@ footer{color:var(--muted);font-size:11px;padding:4px 8px 8px;text-align:center}
 .pp td{padding:2px 4px;border:none}
 .leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
 .leaflet-bar a{background:#2E2E2E;color:var(--text);border-color:var(--line)}
+.author{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:5px 12px 5px 6px;border-radius:999px;background:linear-gradient(90deg,rgba(253,141,60,.16),rgba(253,141,60,.04));border:1px solid rgba(253,141,60,.45);font-size:12.5px;color:var(--text)}
+.author .av{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#1B1B1B;font-weight:700;font-size:10.5px;letter-spacing:.3px}
+.author .k{color:var(--muted)}
+.author b{font-weight:600}
+.author .ch{color:#FDB97C;font-weight:600}
+.mapauthor{background:rgba(36,36,36,.9);color:var(--text);padding:5px 9px;border:1px solid rgba(253,141,60,.5);border-radius:3px;font-size:11px;line-height:1.35}
+.mapauthor span{color:#FDB97C}
 @media (max-width:1000px){.ind{grid-template-columns:repeat(2,1fr)}.main,.bottom,.drivers{grid-template-columns:1fr}.right{grid-template-rows:260px 300px}}
 </style>
 </head>
@@ -72,7 +79,8 @@ footer{color:var(--muted);font-size:11px;padding:4px 8px 8px;text-align:center}
 <header class="panel">
   <div>
     <h1>Summer Urban Surface Heat &amp; Population Exposure</h1>
-    <p>Greater London vs Birmingham–West Midlands (MSOAs), 2021–2025 · Powell A. Ndlovu · MSc GIS &amp; Climate Change project thesis, Department of Geography, Swansea University, September 2026</p>
+    <p>Greater London vs Birmingham–West Midlands (MSOAs), 2021–2025 · MSc GIS &amp; Climate Change project thesis, Department of Geography, Swansea University, September 2026</p>
+    <div class="author"><span class="av" aria-hidden="true">PN</span><span><span class="k">Author:</span> <b>Powell A. Ndlovu</b> · <span class="ch">Chevening Alumnus</span></span></div>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <div class="btns" id="cityBtns"></div>
@@ -147,7 +155,7 @@ footer{color:var(--muted);font-size:11px;padding:4px 8px 8px;text-align:center}
     </div>
   </div>
 </section>
-<footer>Sources: Landsat 8/9 Collection 2 (USGS) via Google Earth Engine · MODIS MCD43A3 · SRTM · HadUK-Grid and station records (Met Office) · ONS Census 2021 and MSOA 2021 boundaries (Open Government Licence) · Basemap © OpenStreetMap contributors © CARTO</footer>
+<footer><b style="color:var(--text);font-weight:600">Author: Powell A. Ndlovu, Chevening Alumnus</b> · Sources: Landsat 8/9 Collection 2 (USGS) via Google Earth Engine · MODIS MCD43A3 · SRTM · HadUK-Grid and station records (Met Office) · ONS Census 2021 and MSOA 2021 boundaries (Open Government Licence) · Basemap © OpenStreetMap contributors © CARTO</footer>
 </div>
 
 <script>
@@ -207,6 +215,9 @@ const byCode = {}; heat.eachLayer(l => byCode[l.feature.properties.MSOA21CD] = l
 const legend = L.control({position:'bottomright'});
 legend.onAdd = () => { const d = L.DomUtil.create('div','legend'); d.id='legend'; return d; };
 legend.addTo(map);
+const authorCtl = L.control({position:'bottomleft'});
+authorCtl.onAdd = () => { const d = L.DomUtil.create('div','mapauthor'); d.innerHTML = 'Author: <b>Powell A. Ndlovu</b><br><span>Chevening Alumnus</span>'; return d; };
+authorCtl.addTo(map);
 function drawLegend(){
   let h = `<b>${label(field)} (°C)</b><br>`;
   for(let i=5;i>=0;i--) h += `<i style="background:${RAMP[i]}"></i>${breaks[i].toFixed(1)} – ${breaks[i+1].toFixed(1)}<br>`;
